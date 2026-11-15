@@ -33,8 +33,8 @@ first that your game files are the version it was made for, and refuses to run o
    emulator's `load` folder.
 5. Pick a **look** and a **glow**, then click **Install / Change**. It takes a few minutes.
 
-**Something went wrong?** Your game is never left half-changed. Click **Report a Problem**: it opens a bug report on
-this mod's GitHub page with the details filled in (your user name and folders are hidden; you review it and click
+**Something went wrong?** Your game only changes when an install finishes, so a failed install leaves it as it was.
+Click **Report a Problem**: it opens a bug report on this mod's GitHub page with the details filled in (your user name and folders are hidden; you review it and click
 submit yourself; you need a free GitHub account). The full log is also copied to your clipboard.
 
 **To switch options:** run `Install.bat` again, pick the new look or glow, click **Install / Change**.
