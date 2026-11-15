@@ -16,9 +16,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 LIB = os.path.join(HERE, "patcher")
 sys.path.insert(0, LIB)
 import game  # noqa: E402
+import addons  # noqa: E402
 
 MOD_NAME = "DarkLink-DemiseGlow"
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 TITLE_ID = "0400486024DEC000"
 ASTC_SETS = ["weapons", "clothes", "darksword", "icons"]
 
@@ -134,6 +135,16 @@ def main():
     # failed or interrupted build never leaves a half-made mod that the game would load.
     tmp = os.path.join(os.path.dirname(dest), "-" + MOD_NAME + "-building")
     log = build_look.build(tmp, a.look, a.glow)
+    # Add-ons (other DenizenofWhite mods): keep every add-on merged into the old folder, and take in add-ons installed
+    # in their own folders next to this one. Each re-applies its own checked byte patches on top of this build.
+    notes = {n["addon"]: n for n in addons.sibling_notes(os.path.dirname(dest), MOD_NAME)}
+    if os.path.isdir(dest):
+        notes.update({n["addon"]: n for n in addons.host_notes(dest)})
+    for n in notes.values():
+        addons.apply(tmp, romfs, n["patches"])
+        os.makedirs(os.path.join(tmp, addons.HOST_NOTES), exist_ok=True)
+        json.dump(n, open(os.path.join(tmp, addons.HOST_NOTES, n["addon"] + ".json"), "w"), indent=1)
+        log.append(f"  add-on kept: {n.get('title', n['addon'])}")
     open(os.path.join(tmp, "README.txt"), "w").write(
         f"{MOD_NAME} {VERSION}: look {a.look}, glow {a.glow}. Made by install.py from your own game files. "
         "Run the installer again to change or uninstall, or delete this folder.\n")

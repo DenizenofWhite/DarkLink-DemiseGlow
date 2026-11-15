@@ -77,6 +77,8 @@ Building takes a few minutes (texture recolouring). Run it with the game closed,
   with it on, the sheathed glow is switched off everywhere, the final battle included.
 - Made for game build e0f3ccfa (program 0400486024DEC000), the build Longshot and Hookshot support. Tested on
   Hookshot, Longshot and a Switch emulator.
+- Compatible with other DenizenofWhite mods (for example Child Link Uses Hylian Shield): install them in the same
+  game in any order, and they keep working when you change this mod's look or glow.
 - Unofficial fan project. Use your own legally obtained copy of the game.
 
 Made by DenizenofWhite. Built with AI assistance.

@@ -15,7 +15,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Title = 'Dark Link and Demise Glow'
-$Version = '1.0.1'
+$Version = '1.1.0'
 $ModName = 'DarkLink-DemiseGlow'
 $TitleId = '0400486024DEC000'
 $AstcPage = 'https://github.com/ARM-software/astc-encoder/releases/tag/5.7.1'
@@ -86,6 +86,16 @@ function Get-ModDir([string]$mode, [string]$game, [string]$load) {
     if ($mode -eq 'game') { if ($game) { return Join-Path (Join-Path $game 'mods') $ModName } }
     elseif ($load) { return Join-Path (Join-Path $load $TitleId) $ModName }
     return $null
+}
+
+function Get-AddonText([string]$modDir) {
+    # add-ons (other DenizenofWhite mods) merged into this one keep a note in <mod>\addons
+    if (-not $modDir) { return '' }
+    $t = ''
+    foreach ($n in Get-ChildItem -LiteralPath (Join-Path $modDir 'addons') -Filter *.json -ErrorAction SilentlyContinue) {
+        try { $t += ' + ' + (Get-Content -LiteralPath $n.FullName -Raw | ConvertFrom-Json).title } catch { }
+    }
+    return $t
 }
 
 function Get-InstalledState([string]$modDir) {
@@ -466,7 +476,7 @@ function Update-View {
     foreach ($c in (@($pRomfs.Values) + @($pLoad.Values))) { $c.Visible = $emu }
     $mod = Get-ModDir (Get-Mode) $pGame.box.Text $pLoad.box.Text
     $st = Get-InstalledState $mod
-    if ($st) { $lState.Text = "Installed Now: $($Names[$st.look]) + $($Names[$st.glow]) (v$($st.version))"; $lState.ForeColor = $Clr.ok }
+    if ($st) { $lState.Text = "Installed Now: $($Names[$st.look]) + $($Names[$st.glow])$(Get-AddonText $mod) (v$($st.version))"; $lState.ForeColor = $Clr.ok }
     elseif ($mod) { $lState.Text = 'Not installed in this game.'; $lState.ForeColor = $Clr.muted }
     else { $lState.Text = 'Choose your game folder above.'; $lState.ForeColor = $Clr.muted }
     if ($script:S) { $lState.Top = [int]($(if ($emu) { 118 } else { 86 }) * $script:S) }   # no empty gap in Longshot/Hookshot mode
