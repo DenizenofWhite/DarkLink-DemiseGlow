@@ -1,0 +1,7 @@
+# made on the user's PC from their own game files: never commit
+patcher/assets/
+patcher/work/
+astcenc/
+installer-settings.json
+__pycache__/
+*.pyc
