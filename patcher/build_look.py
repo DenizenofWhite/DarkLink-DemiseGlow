@@ -16,9 +16,13 @@ import rstb  # noqa: E402
 ASSETS = os.path.join(HERE, "assets")
 LOOK_GEAR = {"Weapon_Shield_Hylian": "Weapon_Shield_Hylian_Dark", "Weapon_Sword_Master": "Weapon_Sword_Master_Dark"}
 LOOK_BODY = {"Player_Adult": "Player_Adult_Dark"}
-LOOK_PACKS = {"gear": ["Weapon_Shield_Hylian.pack.zs", "Weapon_Sword_Master.pack.zs"],
-              "full": ["Weapon_Shield_Hylian.pack.zs", "Weapon_Sword_Master.pack.zs",
-                       "Player_Adult.pack.zs", "Player_Base.pack.zs", "PouchPlayer_Adult.pack.zs"]}
+# Every pack holding a copy of a swapped ModelInfo file must get the same edit: the game keeps whichever copy loads
+# first in a session. Dm_Sword_Master (the Temple of Time cutscene sword) and Shop_Weapon_Shield_Hylian carry their own
+# copies of the sword's and shield's ModelInfo; unpatched, they left the stock sword/shield until a reload (v1.0.1).
+WEAPON_PACKS = ["Weapon_Shield_Hylian.pack.zs", "Weapon_Sword_Master.pack.zs",
+                "Dm_Sword_Master.pack.zs", "Shop_Weapon_Shield_Hylian.pack.zs"]
+LOOK_PACKS = {"gear": WEAPON_PACKS,
+              "full": WEAPON_PACKS + ["Player_Adult.pack.zs", "Player_Base.pack.zs", "PouchPlayer_Adult.pack.zs"]}
 LOOK_ROWS = {"gear": ["Weapon_Shield_Hylian", "Weapon_Sword_Master"],
              "full": ["Weapon_Shield_Hylian", "Weapon_Sword_Master", "Player_Adult", "PouchPlayer_Adult"]}
 # Recoloured textures ship under their own names, so the Dark Link boss, the tunic items and anything else that shares

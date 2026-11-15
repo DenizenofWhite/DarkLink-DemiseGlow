@@ -15,7 +15,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Title = 'Dark Link and Demise Glow'
-$Version = '1.0.0'
+$Version = '1.0.1'
 $ModName = 'DarkLink-DemiseGlow'
 $TitleId = '0400486024DEC000'
 $AstcPage = 'https://github.com/ARM-software/astc-encoder/releases/tag/5.7.1'

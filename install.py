@@ -18,7 +18,7 @@ sys.path.insert(0, LIB)
 import game  # noqa: E402
 
 MOD_NAME = "DarkLink-DemiseGlow"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 TITLE_ID = "0400486024DEC000"
 ASTC_SETS = ["weapons", "clothes", "darksword", "icons"]
 

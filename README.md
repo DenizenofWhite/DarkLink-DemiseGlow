@@ -4,7 +4,7 @@ A mod for **The Legend of Zelda: Ocarina of Time** (Switch 2), for **Longshot**,
 emulators.
 
 - **Dark Link Gear:** Dark Link's black Master Sword (ruby jewel) and shield, black tunic, undercoat, boots, gloves and
-  hat, silver buckles and earrings, black-and-silver sheath, with Link's normal face.
+  hat, silver buckles and earrings, black-and-silver sheath, with Link's Normal Face.
 - **Full Dark Link:** the same, with Dark Link's skin and eyes.
 - **Demise Glow:** the Master Sword always shines with its final-battle aura, swing swoop and lens flare, recoloured
   to a deep red with hot scarlet-orange glints, like a corrupted blade heating up. It goes dark when sheathed.
@@ -76,7 +76,7 @@ Building takes a few minutes (texture recolouring). Run it with the game closed,
 - The glow option makes the Master Sword shine all the time (the game normally only does this in the final battle);
   with it on, the sheathed glow is switched off everywhere, the final battle included.
 - Made for game build e0f3ccfa (program 0400486024DEC000), the build Longshot and Hookshot support. Tested on
-  Hookshot v2.0.14. Longshot and emulators: reports welcome.
+  Hookshot, Longshot and a Switch emulator.
 - Unofficial fan project. Use your own legally obtained copy of the game.
 
 Made by DenizenofWhite. Built with AI assistance.
