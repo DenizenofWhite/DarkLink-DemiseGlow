@@ -214,6 +214,31 @@ def recolor_pixel(tex, r, g, b):
     return None
 FACE_EYES = ((285 / 768, 315 / 768), (483 / 768, 315 / 768))
 LINER_R, LINER_FADE = (0.045, 0.003)
+LINER_RGB = (14, 12, 14)
+LID_MODEL, LID_SHAPE = ('Model/Player_Adult.Player_Adult.bfres.zs', 'Upper_Eyelid_low__Mt_Face_SoftEdge')
+LID_SOLID, LID_FADE = (0.27, 0.3)
+LID_SOLID, LID_FADE = (0.245, 0.26)
+LINER_LOWER_ONLY = True
+LID_PROBE = False
+LID_SHAPE_LOW = 'Lower_Eyelid_low__Mt_Face_SoftEdge'
+LID_PROBE_COLOURS = [(255, 0, 0), (0, 220, 0), (0, 90, 255), (255, 230, 0), (255, 0, 255)]
+
+def on_upper_lid(x, y, w, h):
+    if not (FACE_OPTS['liner'] or FACE_OPTS['hair']):
+        return False
+    import bfres_uv
+    return bfres_uv.edge_field(LID_MODEL, LID_SHAPE, w, h)[y * w + x] is not None
+
+def lid_liner(x, y, w, h):
+    if not FACE_OPTS['liner']:
+        return 0.0
+    import bfres_uv
+    if bfres_uv.edge_field(LID_MODEL, LID_SHAPE_LOW, w, h)[y * w + x] is not None:
+        return 1.0
+    f = bfres_uv.edge_field(LID_MODEL, LID_SHAPE, w, h)[y * w + x]
+    if f is None:
+        return 0.0
+    return 1.0 if f <= LID_SOLID else max(0.0, 1 - (f - LID_SOLID) / (LID_FADE - LID_SOLID))
 FACE_OPTS = {'hair': True, 'liner': True}
 ISLAND_RED = {'Mt_Vest_Armor_Adult_Goron_Alb': ('Model/Armor_Adult_Goron.Armor_Adult_Goron.bfres.zs', (377, 378))}
 
@@ -314,6 +339,8 @@ def face_pixel(u, v, r, g, b):
         dx, dy = (u - cx, v - cy)
         rr = (dx * dx + dy * dy) ** 0.5
         ring = 1.0 if rr <= LINER_R else max(0.0, 1 - (rr - LINER_R) / LINER_FADE)
+        if LINER_LOWER_ONLY:
+            ring *= max(0.0, min(1.0, (dy + 0.004) / 0.008))
         dark = max(dark, ring)
     if dark > 0:
         liner = (14, 12, 14)
@@ -494,6 +521,23 @@ def recolor():
                                     new = (grey, grey, min(255, int(grey * 1.03)))
                         if n == 'Mt_Face_Player_Adult_Alb':
                             new = face_pixel(x / w, y / h, px[o], px[o + 1], px[o + 2])
+                            if on_upper_lid(x, y, w, h):
+                                new = None
+                            k = lid_liner(x, y, w, h)
+                            if LID_PROBE:
+                                import bfres_uv
+                                f = bfres_uv.edge_field(LID_MODEL, LID_SHAPE, w, h)[y * w + x]
+                                lo = bfres_uv.edge_field(LID_MODEL, LID_SHAPE_LOW, w, h)[y * w + x]
+                                if f is not None:
+                                    new = LID_PROBE_COLOURS[min(4, int(f * 5))]
+                                elif lo is not None:
+                                    new = (255, 255, 255)
+                                for cx, cy in FACE_EYES:
+                                    if ((x / w - cx) ** 2 + (y / h - cy) ** 2) ** 0.5 <= LINER_R + LINER_FADE:
+                                        new = (0, 255, 255) if y / h < cy else (255, 140, 0)
+                                k = 0
+                            if k > 0:
+                                new = tuple((int(c * (1 - k) + d * k) for c, d in zip(new or tuple(px[o:o + 3]), LINER_RGB)))
                         if new and n.startswith('Eye_Inner_Iris'):
                             rr = (((x + 0.5) / w - 0.5) ** 2 + ((y + 0.5) / h - 0.5) ** 2) ** 0.5
                             f = 0.06 if rr <= 0.11 else min(1.0, 0.06 + 0.94 * (rr - 0.11) / 0.05)

@@ -22,7 +22,7 @@ import game  # noqa: E402
 import addons  # noqa: E402
 
 MOD_NAME = "DarkLink-DemiseGlow"
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 TITLE_ID = "0400486024DEC000"
 ASTC_SETS = ["weapons", "clothes", "darksword", "icons", "tunics_goron", "goron", "beads", "icon_goron"]
 CACHE = os.path.join(HERE, "cache")

@@ -5,7 +5,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import bntx_astc as bx
 import bcn
-from recolor_gear import FACE_EYES, LINER_R, LINER_FADE
+from recolor_gear import FACE_EYES, LINER_R, LINER_FADE, LINER_LOWER_ONLY, lid_liner
 TEX = 'Mt_Face_Player_Adult_Rgh'
 GLOSS = 30
 
@@ -13,7 +13,10 @@ def weight(u, v):
     best = 0.0
     for cx, cy in FACE_EYES:
         rr = ((u - cx) ** 2 + (v - cy) ** 2) ** 0.5
-        best = max(best, 1.0 if rr <= LINER_R else max(0.0, 1 - (rr - LINER_R) / LINER_FADE))
+        ring = 1.0 if rr <= LINER_R else max(0.0, 1 - (rr - LINER_R) / LINER_FADE)
+        if LINER_LOWER_ONLY:
+            ring *= max(0.0, min(1.0, (v - cy + 0.004) / 0.008))
+        best = max(best, ring)
     return best
 
 def main():
@@ -26,7 +29,7 @@ def main():
         changed = 0
         for by in range(hb):
             for bxk in range(wb):
-                ws = [weight((bxk * 4 + i % 4 + 0.5) / w, (by * 4 + i // 4 + 0.5) / h) for i in range(16)]
+                ws = [max(weight((bxk * 4 + i % 4 + 0.5) / w, (by * 4 + i // 4 + 0.5) / h), lid_liner(bxk * 4 + i % 4, by * 4 + i // 4, w, h) if bxk * 4 + i % 4 < w and by * 4 + i // 4 < h else 0.0) for i in range(16)]
                 if max(ws) == 0:
                     continue
                 vals = bcn.bc4_block_decode(blocks[by][bxk])
