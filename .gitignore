@@ -5,3 +5,4 @@ astcenc/
 installer-settings.json
 __pycache__/
 *.pyc
+cache/

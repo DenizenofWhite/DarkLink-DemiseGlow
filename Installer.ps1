@@ -2,7 +2,8 @@
 # Builds the mod from the player's own game files by running install.py, and can switch options or uninstall.
 # -Test runs the same steps without the window (for automated checks):
 #   Installer.ps1 -Test -Action state|install|uninstall -Mode game|emulator -Game <dir> | -Romfs <dir> -Load <dir>
-#                 [-Look gear|full|none] [-Glow red|stock|off] [-AstcZip <astcenc zip>]
+#                 [-Look gear|full|none] [-Glow red|stock|off] [-Face hair,eyes,liner (the Gear face options on)]
+#                 [-AstcZip <astcenc zip>]
 param(
     [switch]$Test,
     [ValidateSet('state', 'install', 'uninstall')][string]$Action = 'state',
@@ -10,12 +11,13 @@ param(
     [string]$Game, [string]$Romfs, [string]$Load,
     [ValidateSet('gear', 'full', 'none')][string]$Look = 'gear',
     [ValidateSet('red', 'stock', 'off')][string]$Glow = 'red',
+    [string]$Face = 'hair,eyes,liner',
     [string]$AstcZip
 )
 $ErrorActionPreference = 'Stop'
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Title = 'Dark Link and Demise Glow'
-$Version = '1.1.0'
+$Version = '1.2.0'
 $ModName = 'DarkLink-DemiseGlow'
 $TitleId = '0400486024DEC000'
 $AstcPage = 'https://github.com/ARM-software/astc-encoder/releases/tag/5.7.1'
@@ -116,13 +118,15 @@ function Get-GameProcess([string]$game) {
 }
 
 function Get-InstallArgs([string]$action, [string]$mode, [string]$game, [string]$romfs, [string]$load,
-                         [string]$look, [string]$glow, [string]$astcenc) {
+                         [string]$look, [string]$glow, [string]$astcenc, [string]$face = 'hair,eyes,liner') {
     $a = @('-u', '-I', (Join-Path $Here 'install.py'))
     if ($mode -eq 'game') { $a += @('--hookshot', $game.TrimEnd('\')) }
     else { $a += @('--romfs', $romfs.TrimEnd('\'), '--emulator-load', $load.TrimEnd('\')) }
     if ($action -eq 'uninstall') { $a += '--uninstall' }
     else {
         $a += @('--look', $look, '--glow', $glow)
+        $on = @($face -split ',' | ForEach-Object { $_.Trim() })
+        foreach ($o in 'hair', 'eyes', 'liner') { if ($on -notcontains $o) { $a += "--no-$o" } }
         if ($astcenc) { $a += @('--astcenc', $astcenc) }
     }
     return $a
@@ -175,7 +179,7 @@ if ($Test) {
         $err = Test-Inputs $Action $Mode $Game $Romfs $Load
         if ($err) { "REFUSED: $err"; exit 2 }
         if (-not $py) { 'REFUSED: no Python 3.14'; exit 2 }
-        $p = Start-Proc $py (Get-InstallArgs $Action $Mode $Game $Romfs $Load $Look $Glow $ast)
+        $p = Start-Proc $py (Get-InstallArgs $Action $Mode $Game $Romfs $Load $Look $Glow $ast $Face)
         $out = $p.StandardOutput.ReadToEndAsync(); $er = $p.StandardError.ReadToEndAsync()
         $p.WaitForExit()
         $out.Result; $er.Result
@@ -373,12 +377,25 @@ $pLoad = Add-PathRow $g1 'Emulator Load Folder:' 84 $settings['load']
 $lState = New-Label $g1 12 118 550 48
 $lState.Font = New-Object System.Drawing.Font('Segoe UI', 12, [System.Drawing.FontStyle]::Bold)
 
-$g2 = Add-Group '3. Look' 404 104
+$g2 = Add-Group '3. Look' 404 160
 $rGear = Add-Radio $g2 "Dark Link's Gear (Link's Normal Face)" 12 22 0
 $rFull = Add-Radio $g2 "Full Dark Link (Dark Link's Skin and Eyes)" 12 48 0
 $rLookNone = Add-Radio $g2 'No Look Change' 12 74 0
+# Face options for the Gear look (on by default; Full Dark Link already has Dark Link's own face)
+$lNew = New-Label $g2 12 102 552 22
+$lNew.Text = "NEW  Face Options for Dark Link's Gear (untick any you don't want)"
+$lNew.Font = New-Object System.Drawing.Font('Segoe UI', 10.5, [System.Drawing.FontStyle]::Bold); $lNew.ForeColor = $Clr.ember
+function Add-Check($parent, $text, $x, $y) {
+    $c = New-Object System.Windows.Forms.CheckBox
+    $c.Text = $text; $c.ForeColor = $Clr.text; $c.UseMnemonic = $false; $c.AutoSize = $true; $c.Checked = $true
+    $c.Location = New-Object System.Drawing.Point($x, $y)
+    $parent.Controls.Add($c); return $c
+}
+$cHair = Add-Check $g2 'Black Hair and Brows' 24 128
+$cEyes = Add-Check $g2 'Red Eyes' 250 128
+$cLiner = Add-Check $g2 'Eyeliner' 390 128
 
-$g3 = Add-Group '4. Master Sword Glow' 516 104
+$g3 = Add-Group '4. Master Sword Glow' 572 104
 $rRed = Add-Radio $g3 'Red Demise Inspired Glow (Corrupted Master Sword)' 12 22 0
 $rStock = Add-Radio $g3 'OG Master Sword Glow (Final Battle)' 12 48 0
 $rGlowOff = Add-Radio $g3 'No Master Sword Glow (Vanilla)' 12 74 0
@@ -394,14 +411,14 @@ function Add-PrereqRow($y, $name) {
 $rowPy = Add-PrereqRow 20 'Python 3.14'
 $rowAst = Add-PrereqRow 54 'astcenc 5.7.1 (ARM texture tool)'
 
-$bInstall = New-Button 'Install / Change' 12 630 190 36 $true
+$bInstall = New-Button 'Install / Change' 12 684 190 36 $true
 $bInstall.Font = New-Object System.Drawing.Font('Segoe UI', 12, [System.Drawing.FontStyle]::Bold)
-$bUninstall = New-Button 'Uninstall (Back to Stock)' 210 630 182 36 $false
-$bReport = New-Button 'Report a Problem' 400 630 122 36 $false
-$bClose = New-Button 'Close' 528 630 60 36 $false
+$bUninstall = New-Button 'Uninstall (Back to Stock)' 210 684 182 36 $false
+$bReport = New-Button 'Report a Problem' 400 684 122 36 $false
+$bClose = New-Button 'Close' 528 684 60 36 $false
 $log = New-Object System.Windows.Forms.TextBox
 $log.Multiline = $true; $log.ReadOnly = $true; $log.ScrollBars = 'Vertical'; $log.WordWrap = $true
-$log.Location = New-Object System.Drawing.Point(12, 676); $log.Size = New-Object System.Drawing.Size(576, 112)
+$log.Location = New-Object System.Drawing.Point(12, 728); $log.Size = New-Object System.Drawing.Size(576, 62)
 $log.Font = New-Object System.Drawing.Font('Consolas', 10); $log.BackColor = [System.Drawing.Color]::FromArgb(10, 7, 7)
 $log.ForeColor = $Clr.log; $log.BorderStyle = 'FixedSingle'
 $f.Controls.AddRange(@($bInstall, $bUninstall, $bReport, $bClose, $log))
@@ -409,6 +426,7 @@ $f.Controls.AddRange(@($bInstall, $bUninstall, $bReport, $bClose, $log))
 function Write-Log($s) { $log.AppendText($s + "`r`n") }
 function Get-Mode { if ($rEmu.Checked) { 'emulator' } else { 'game' } }
 function Get-Look { if ($rFull.Checked) { 'full' } elseif ($rLookNone.Checked) { 'none' } else { 'gear' } }
+function Get-Face { (@(@($cHair, 'hair'), @($cEyes, 'eyes'), @($cLiner, 'liner')) | Where-Object { $_[0].Checked } | ForEach-Object { $_[1] }) -join ',' }
 function Get-Glow { if ($rStock.Checked) { 'stock' } elseif ($rGlowOff.Checked) { 'off' } else { 'red' } }
 function Show-Msg($text, $icon) { [System.Windows.Forms.MessageBox]::Show($text, $Title, 'OK', $icon) | Out-Null }
 $Names = @{ gear = "Dark Link's Gear"; full = 'Full Dark Link'; none = 'No Look Change'
@@ -486,7 +504,7 @@ function Update-View {
 
 function Save-Settings {
     $o = @{ python = $script:python; mode = (Get-Mode); game = $pGame.box.Text; romfs = $pRomfs.box.Text; load = $pLoad.box.Text
-            look = (Get-Look); glow = (Get-Glow) }
+            look = (Get-Look); glow = (Get-Glow); hair = $cHair.Checked; eyes = $cEyes.Checked; liner = $cLiner.Checked }
     try { $o | ConvertTo-Json | Set-Content -LiteralPath $SettingsFile -Encoding UTF8 } catch { }
 }
 
@@ -499,6 +517,7 @@ function Set-Busy($busy, $label) {
     # While working, lock the choices WITHOUT greying them out (Windows' grey "disabled" text is unreadable on dark).
     foreach ($r in @($rGame, $rEmu, $rGear, $rFull, $rLookNone, $rRed, $rStock, $rGlowOff)) { $r.AutoCheck = -not $busy }
     foreach ($t in @($pGame.box, $pRomfs.box, $pLoad.box)) { $t.ReadOnly = $busy }
+    foreach ($c in @($cHair, $cEyes, $cLiner)) { $c.AutoCheck = -not $busy }
     $script:busy = $busy
     $bInstall.Text = if ($busy) { $label } else { 'Install / Change' }
     if (-not $busy) { $bInstall.BackColor = $Clr.red; Update-View }
@@ -570,7 +589,7 @@ function Invoke-Action($action) {
     Write-Log $(if ($action -eq 'install') { "Installing: $($Names[(Get-Look)]) + $($Names[(Get-Glow)]). This takes a few minutes..." } else { 'Uninstalling...' })
     $kind = if ($action -eq 'uninstall') { 'uninstall' } else { 'mod' }
     $label = if ($action -eq 'uninstall') { 'Uninstalling Mod...' } else { 'Installing Mod...' }
-    Start-Logged $kind $label $script:python (Get-InstallArgs $action $mode $pGame.box.Text $pRomfs.box.Text $pLoad.box.Text (Get-Look) (Get-Glow) (Find-Astcenc))
+    Start-Logged $kind $label $script:python (Get-InstallArgs $action $mode $pGame.box.Text $pRomfs.box.Text $pLoad.box.Text (Get-Look) (Get-Glow) (Find-Astcenc) (Get-Face))
 }
 
 $rGame.Add_CheckedChanged({ Update-View }); $rEmu.Add_CheckedChanged({ Update-View })
@@ -665,6 +684,11 @@ $f.Add_FormClosed({ $anim.Stop() })
 if ($settings['mode'] -eq 'emulator') { $rEmu.Checked = $true } else { $rGame.Checked = $true }
 switch ($settings['look']) { 'full' { $rFull.Checked = $true } 'none' { $rLookNone.Checked = $true } default { $rGear.Checked = $true } }
 switch ($settings['glow']) { 'stock' { $rStock.Checked = $true } 'off' { $rGlowOff.Checked = $true } default { $rRed.Checked = $true } }
+# face options: on unless the player unticked them last time; usable only with the Gear look
+foreach ($p in @(@($cHair, 'hair'), @($cEyes, 'eyes'), @($cLiner, 'liner'))) { if ($settings[$p[1]] -eq $false) { $p[0].Checked = $false } }
+$faceSync = { foreach ($c in @($cHair, $cEyes, $cLiner)) { $c.Enabled = $rGear.Checked -and -not $script:busy } }
+foreach ($r in @($rGear, $rFull, $rLookNone)) { $r.Add_CheckedChanged($faceSync) }
+& $faceSync
 Update-View
 [void]$f.ShowDialog()
 } catch {

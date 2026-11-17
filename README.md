@@ -4,10 +4,16 @@ A mod for **The Legend of Zelda: Ocarina of Time** (Switch 2), for **Longshot**,
 emulators.
 
 - **Dark Link Gear:** Dark Link's black Master Sword (ruby jewel) and shield, black tunic, undercoat, boots, gloves and
-  hat, silver buckles and earrings, black-and-silver sheath, with Link's Normal Face.
-- **Full Dark Link:** the same, with Dark Link's skin and eyes.
+  hat, silver buckles and earrings, black-and-silver sheath, on Link's own body. **New face options** (all on by
+  default; untick any you don't want): **Black Hair and Brows** (shiny black), **Red Eyes** (black pupils) and
+  **Eyeliner** (thin and glossy).
+- **Full Dark Link:** the same, with Dark Link's skin and eyes. The Goron and Zora tunics keep their heat and water
+  protection but show Dark Link's outfit, so you always look like Dark Link.
+- **Goron Tunic to match (both looks):** black leather and embroidery, the red cloth kept, silver belt ring and studs,
+  black hat rope, and a menu picture to match.
 - **Demise Glow:** the Master Sword always shines with its final-battle aura, swing swoop and lens flare, recoloured
-  to a deep red with hot scarlet-orange glints, like a corrupted blade heating up. It goes dark when sheathed.
+  to a deep red with hot scarlet-orange glints, like a corrupted blade heating up. It goes dark when sheathed (on the
+  equipment screen too).
 
 **No game files are included.** The patcher builds every file from **your own** copy of the game on your PC, checks
 first that your game files are the version it was made for, and refuses to run otherwise. Only code is published here.
@@ -31,7 +37,9 @@ first that your game files are the version it was made for, and refuses to run o
    astcenc, just leave `astcenc-5.7.1-windows-x64.zip` in your Downloads folder).
 4. Pick your game: your **Longshot / Hookshot** folder, or for an emulator your game's `romfs` folder plus the
    emulator's `load` folder.
-5. Pick a **look** and a **glow**, then click **Install / Change**. It takes a few minutes.
+5. Pick a **look** (with Dark Link's Gear, tick the face options you want) and a **glow**, then click
+   **Install / Change**. The first install takes a few minutes; changing options later is quicker, because the
+   finished textures are kept in the `cache` folder next to `Install.bat` (delete it any time to free the space).
 
 **Something went wrong?** Your game only changes when an install finishes, so a failed install leaves it as it was.
 Click **Report a Problem**: it opens a bug report on this mod's GitHub page with the details filled in (your user name and folders are hidden; you review it and click
@@ -62,8 +70,10 @@ Options:
 |---|---|---|
 | `--look` | `gear` (Dark Link's Gear, Link's Normal Face), `full` (Full Dark Link, Dark Link's Skin and Eyes), `none` | `gear` |
 | `--glow` | `red` (Demise glow), `stock` (always-on glow in the game's own colours), `off` | `red` |
+| `--no-hair`, `--no-eyes`, `--no-liner` | with `gear`: leave out Black Hair and Brows, Red Eyes or Eyeliner | all on |
 
-Building takes a few minutes (texture recolouring). Run it with the game closed, then start the game.
+Building takes a few minutes (texture recolouring; later runs reuse `cache`). Run it with the game closed, then
+start the game.
 
 **Uninstall:** `--uninstall` (or delete the `DarkLink-DemiseGlow` folder). **Change options:** run `install.py` again.
 
@@ -72,7 +82,8 @@ Building takes a few minutes (texture recolouring). Run it with the game closed,
 - Only Link changes. The recoloured textures are given their own names, so the Dark Link boss, the tunic items and
   anything else that shares the game's textures keep their normal look. Two exceptions by design: both looks use Dark
   Link's own sword model, so his sword shares the ruby jewel; and in `full` Link wears Dark Link's own body model, so
-  the boss matches you.
+  the boss matches you. The Goron Tunic's textures keep their game names, so the tunic in shops looks like the one
+  you wear.
 - The glow option makes the Master Sword shine all the time (the game normally only does this in the final battle);
   with it on, the sheathed glow is switched off everywhere, the final battle included.
 - Made for game build e0f3ccfa (program 0400486024DEC000), the build Longshot and Hookshot support. Tested on

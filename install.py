@@ -6,7 +6,10 @@ and installs it. No game files ship with this patcher; everything is made from y
   Emulator:  python install.py --romfs "D:/dump/romfs" --emulator-load "C:/Users/me/AppData/Roaming/<emulator>/load"
   Folder:    python install.py --romfs "D:/dump/romfs" --out "D:/mods-out"
 Options:   --look gear|full|none (default gear)   --glow red|stock|off (default red)   --astcenc <path to astcenc>
-Needs Python 3.14+ (Hookshot's builder ships one) and ARM's astcenc (see README). Uninstall: delete the mod folder."""
+           Gear face options (all on by default): --no-hair (black hair and brows), --no-eyes (red eyes),
+           --no-liner (eyeliner)
+Needs Python 3.14+ (Hookshot's builder ships one) and ARM's astcenc (see README). Uninstall: delete the mod folder.
+Recoloured textures are kept in the 'cache' folder next to this file, so changing options later is quick."""
 import argparse, glob, hashlib, json, os, shutil, subprocess, sys
 
 if sys.version_info < (3, 14):
@@ -19,9 +22,10 @@ import game  # noqa: E402
 import addons  # noqa: E402
 
 MOD_NAME = "DarkLink-DemiseGlow"
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 TITLE_ID = "0400486024DEC000"
-ASTC_SETS = ["weapons", "clothes", "darksword", "icons"]
+ASTC_SETS = ["weapons", "clothes", "darksword", "icons", "tunics_goron", "goron", "beads", "icon_goron"]
+CACHE = os.path.join(HERE, "cache")
 
 
 def find_astcenc(given):
@@ -65,7 +69,40 @@ def check_game(romfs):
                  + "\n  ".join(bad[:10]))
 
 
-def make_assets(exe, look, glow):
+def cache_key(s, recipe=""):
+    import recolor_gear
+    recolor_gear.use_set(s)
+    outs = [recolor_gear.rel(t) for t in recolor_gear.TEXTURES]
+    key = os.path.join(CACHE, f"{VERSION}-{s}{'-' + recipe if recipe else ''}")
+    return key, outs, all(os.path.isfile(os.path.join(key, *o.split("/"))) for o in outs)
+
+
+def astc_set(s, exe, recipe="", fresh=False):
+    """One ASTC recolour set: from the cache when this version already made it with the same recipe, else made with
+    astcenc (export, decode, recolour, encode, splice) and stored in the cache."""
+    import recolor_gear
+    key, outs, cached = cache_key(s, recipe)
+    if cached and not fresh:
+        for o in outs:
+            dst = os.path.join(LIB, "assets", *o.split("/"))
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copyfile(os.path.join(key, *o.split("/")), dst)
+        print(f"ASTC textures: {s} (from the cache)")
+        return
+    print(f"ASTC textures: {s} ...")
+    recolor_gear.export()
+    run_jobs(recolor_gear.WORK, exe)
+    recolor_gear.recolor()
+    run_jobs(recolor_gear.WORK, exe)
+    recolor_gear.do_import()
+    shutil.rmtree(key, ignore_errors=True)
+    for o in outs:
+        dst = os.path.join(key, *o.split("/"))
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copyfile(os.path.join(LIB, "assets", *o.split("/")), dst)
+
+
+def make_assets(exe, look, glow, face=("hair", "eyes", "liner")):
     import bc_recolor, recolor_gear, model_patch, make_glow
     shutil.rmtree(os.path.join(LIB, "assets"), ignore_errors=True)
     shutil.rmtree(os.path.join(LIB, "work"), ignore_errors=True)
@@ -76,15 +113,30 @@ def make_assets(exe, look, glow):
         bc_recolor.process("Tex/Mt_Angin_Acs_Player_Adult_Alb.bntx.zs", bc_recolor.darken)
         bc_recolor.process_bc3("Tex/Angin_Tile_A_Alb.bntx.zs", bc_recolor.darken, "Tex/Angin_Tile_D_Alb.bntx.zs")
         bc_recolor.process("Tex/Mt_Feather_Player_Adult_Alb.bntx.zs", bc_recolor.darken)
+        # (the Dark sword's jewel mask comes from the normal sword's decoded pictures, made by the "weapons" set)
+        redo_weapons = not cache_key("darksword")[2]
         for s in ASTC_SETS:
-            print(f"ASTC textures: {s} ...")
-            recolor_gear.use_set(s)
-            recolor_gear.export()
-            run_jobs(recolor_gear.WORK, exe)
-            recolor_gear.recolor()
-            run_jobs(recolor_gear.WORK, exe)
-            recolor_gear.do_import()
+            astc_set(s, exe, fresh=(s == "weapons" and redo_weapons))
+        # Gear face options (Link's own head): each makes only its own textures
+        face = set(face) if look == "gear" else set()
+        if "eyes" in face:
+            astc_set("eyes", exe)
+        if "hair" in face:
+            astc_set("hairlut_a", exe)
+        if face & {"hair", "liner"}:
+            recolor_gear.FACE_OPTS.update(hair="hair" in face, liner="liner" in face)
+            astc_set("face", exe, "-".join(o for o in ("hair", "liner") if o in face))
+        if "hair" in face:
+            import hair_recolor, brow_recolor
+            print("hair and brows ...")
+            hair_recolor.main()
+            brow_recolor.main()
+        if "liner" in face:
+            import face_gloss
+            print("eyeliner gloss ...")
+            face_gloss.main()
         print("models ...")
+        model_patch.configure(hair="hair" in face, eyes="eyes" in face, liner="liner" in face)
         model_patch.main()
     if glow == "red":
         print("glow effect ...")
@@ -101,6 +153,9 @@ def main():
     ap.add_argument("--look", choices=["gear", "full", "none"], default="gear")
     ap.add_argument("--glow", choices=["red", "stock", "off"], default="red")
     ap.add_argument("--astcenc", help="path to astcenc (default: ./astcenc folder or PATH)")
+    ap.add_argument("--no-hair", action="store_true", help="Gear: keep Link's own hair and brows")
+    ap.add_argument("--no-eyes", action="store_true", help="Gear: keep Link's own eyes")
+    ap.add_argument("--no-liner", action="store_true", help="Gear: no eyeliner")
     ap.add_argument("--uninstall", action="store_true", help="remove the mod folder (back to stock)")
     a = ap.parse_args()
     a.hookshot = a.hookshot or a.longshot
@@ -129,12 +184,13 @@ def main():
     game.ROMFS = romfs
     check_game(romfs)
     exe = find_astcenc(a.astcenc) if a.look != "none" else None
-    make_assets(exe, a.look, a.glow)
+    face = tuple(o for o in ("hair", "eyes", "liner") if not getattr(a, "no_" + o))
+    make_assets(exe, a.look, a.glow, face)
     import build_look
     # Build next to the target under a disabled name (a leading "-" makes Longshot/Hookshot skip it), then swap, so a
     # failed or interrupted build never leaves a half-made mod that the game would load.
     tmp = os.path.join(os.path.dirname(dest), "-" + MOD_NAME + "-building")
-    log = build_look.build(tmp, a.look, a.glow)
+    log = build_look.build(tmp, a.look, a.glow, face)
     # Add-ons (other DenizenofWhite mods): keep every add-on merged into the old folder, and take in add-ons installed
     # in their own folders next to this one. Each re-applies its own checked byte patches on top of this build.
     notes = {n["addon"]: n for n in addons.sibling_notes(os.path.dirname(dest), MOD_NAME)}
@@ -145,10 +201,12 @@ def main():
         os.makedirs(os.path.join(tmp, addons.HOST_NOTES), exist_ok=True)
         json.dump(n, open(os.path.join(tmp, addons.HOST_NOTES, n["addon"] + ".json"), "w"), indent=1)
         log.append(f"  add-on kept: {n.get('title', n['addon'])}")
+    faces = ", face " + (" ".join(face) or "none") if a.look == "gear" else ""
     open(os.path.join(tmp, "README.txt"), "w").write(
-        f"{MOD_NAME} {VERSION}: look {a.look}, glow {a.glow}. Made by install.py from your own game files. "
+        f"{MOD_NAME} {VERSION}: look {a.look}, glow {a.glow}{faces}. Made by install.py from your own game files. "
         "Run the installer again to change or uninstall, or delete this folder.\n")
-    json.dump({"mod": MOD_NAME, "version": VERSION, "look": a.look, "glow": a.glow},
+    json.dump({"mod": MOD_NAME, "version": VERSION, "look": a.look, "glow": a.glow,
+               "hair": "hair" in face, "eyes": "eyes" in face, "liner": "liner" in face},
               open(os.path.join(tmp, "install.json"), "w"))
     if os.path.isdir(dest):
         shutil.rmtree(dest)
